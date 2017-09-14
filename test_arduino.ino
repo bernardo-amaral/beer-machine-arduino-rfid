@@ -9,17 +9,19 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 Servo myservo;
 
+int SEGUNDOS_CERVEJA = 9; //tempo da torneira ativa
+
 int val;
-int botaoCerveja = 3;
+int buttonState = 0;  
 char st[20];
 bool liberaBotao = false;
 
 void setup() {
-  myservo.attach(9);
-  pinMode(botaoCerveja, INPUT);
-  digitalWrite(botaoCerveja, HIGH);
   Serial.begin(9600);
-
+  
+  myservo.attach(6);
+  pinMode(3, INPUT);
+  myservo.write(0);
   SPI.begin();
   mfrc522.PCD_Init();
   Serial.println("Aproxime o seu cartao do leitor...");
@@ -27,6 +29,11 @@ void setup() {
 }
 
 void loop() {
+    //Serial.print("botao ");
+    //Serial.println(buttonState);
+    //Serial.print("acesso ");
+    //Serial.println(liberaBotao);
+    
     if (!mfrc522.PICC_IsNewCardPresent()) {
       return;
     }
@@ -34,7 +41,7 @@ void loop() {
     if (!mfrc522.PICC_ReadCardSerial()) {
       return;
     }
-
+buttonState = digitalRead(3);
     Serial.print("UID da tag :");
     String conteudo= "";
     byte letra;
@@ -48,19 +55,20 @@ void loop() {
     Serial.print("Mensagem : ");
     conteudo.toUpperCase();
 
-    if (conteudo.substring(1) == "D8 4B 12 22") {
+    if (conteudo.substring(1) == "ED A4 DF 2B") {
       Serial.println("Acesso liberado !");
       Serial.println();
       liberaBotao = true;
-      delay(3000);
     }
-
-
-    val = digitalRead(botaoCerveja);
-    if (val != 1 && liberaBotao) {
-       myservo.write(15);
+ 
+    if (buttonState == HIGH || liberaBotao) {
+      Serial.println("Liberando cerveja...");
+       myservo.write(25);
        liberaBotao = false;
-       delay(15);
+       buttonState = false;
+       delay(SEGUNDOS_CERVEJA * 1000);
+       myservo.write(0);
+       Serial.println("Liberando cerveja...OK");
     }
 
 }
